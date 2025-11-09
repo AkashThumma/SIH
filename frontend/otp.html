@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verify OTP | Smart Waste Management</title>
+  <link rel="stylesheet" href="assets/css/pages.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="icon" href="assets/images/logo.png" type="image/png" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo">
+      <img src="assets/images/logo.png" alt="Smart Waste Management Logo" />
+      <h1>Smart Waste Management</h1>
+    </div>
+  </header>
+
+  <section class="form-section">
+    <div class="form-container">
+      <h2><i class="fas fa-envelope"></i> Email Verification</h2>
+      <form id="otpForm">
+        <input type="text" id="otp" placeholder="Enter OTP" required />
+        <button type="submit" class="btn"><i class="fas fa-check"></i> Verify</button>
+      </form>
+      <p id="msg"></p>
+      <div id="passwordFields" style="display:none;">
+        <input type="password" id="password" placeholder="Password" required />
+        <input type="password" id="confirmPassword" placeholder="Confirm Password" required />
+        <button id="setPasswordBtn" class="btn"><i class="fas fa-save"></i> Set Password</button>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>&copy; 2025 Smart Waste Management | <a href="index.html">Home</a> | <a href="about.html">About</a></p>
+  </footer>
+
+  <script>
+    const otpForm = document.getElementById("otpForm");
+    const msg = document.getElementById("msg");
+    const email = localStorage.getItem("signupEmail");
+
+    otpForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msg.textContent = "Verifying...";
+      const res = await fetch("http://localhost:5000/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp: document.getElementById("otp").value }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        msg.style.color = "green";
+        msg.textContent = "OTP verified. Set your password.";
+        otpForm.style.display = "none";
+        document.getElementById("passwordFields").style.display = "block";
+      } else {
+        msg.style.color = "red";
+        msg.textContent = result.message || "Invalid OTP.";
+      }
+    });
+
+    document.getElementById("setPasswordBtn").addEventListener("click", async () => {
+      const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+      if (password !== confirmPassword) {
+        msg.textContent = "Passwords do not match!";
+        return;
+      }
+      const btn = document.getElementById("setPasswordBtn");
+      btn.disabled = true;
+      btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Setting...";
+      const res = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullname: localStorage.getItem("signupFullname"),
+          email,
+          role: localStorage.getItem("signupRole"),
+          password
+        }),
+      });
+      const result = await res.json();
+      btn.disabled = false;
+      btn.innerHTML = "<i class='fas fa-save'></i> Set Password";
+      if (result.success) {
+        msg.style.color = "green";
+        msg.textContent = "Password set successfully! Redirecting to login...";
+        setTimeout(() => (window.location.href = "login.html"), 1500);
+      } else {
+        msg.style.color = "red";
+        msg.textContent = result.message || "Error setting password.";
+      }
+    });
+  </script>
+</body>
+</html>

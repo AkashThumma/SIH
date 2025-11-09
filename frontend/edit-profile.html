@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Profile | Smart Waste Management</title>
+  <link rel="stylesheet" href="assets/css/pages.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo">
+      <img src="assets/images/logo.png" alt="Smart Waste Management Logo" />
+      <h1>Smart Waste Management</h1>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+        <li><a href="citizen.html"><i class="fas fa-user"></i> Citizen</a></li>
+        <li><a href="edit-profile.html" class="active"><i class="fas fa-edit"></i> Edit Profile</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="form-section">
+    <div class="form-container">
+      <h2><i class="fas fa-user-edit"></i> Edit Your Profile</h2>
+      <form id="profileForm">
+        <input type="text" id="username" placeholder="Choose a Username" required />
+        <button type="submit" class="btn"><i class="fas fa-save"></i> Update Username</button>
+      </form>
+      <p id="msg"></p>
+      <p>Note: First time is free. Edits cost 5 points.</p>
+      <a href="citizen.html" class="btn secondary"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+    </div>
+  </section>
+
+  <footer>
+    <p>&copy; 2025 Smart Waste Management | <a href="index.html">Home</a> | <a href="about.html">About</a></p>
+  </footer>
+
+  <script>
+    const backend = "http://localhost:5000";
+    const token = localStorage.getItem("token");
+    if (!token) { alert("Login first"); window.location.href = "login.html"; }
+
+    const msg = document.getElementById("msg");
+    document.getElementById("profileForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("username").value;
+      const res = await fetch(`${backend}/api/profile/update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ username }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        msg.style.color = "green";
+        msg.textContent = `Username updated! Points deducted: ${result.pointsDeducted}`;
+        setTimeout(() => window.location.href = "citizen.html", 2000);
+      } else {
+        msg.style.color = "red";
+        msg.textContent = result.message || "Update failed.";
+      }
+    });
+  </script>
+</body>
+</html>

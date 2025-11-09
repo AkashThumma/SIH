@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | Smart Waste Management</title>
+  <link rel="stylesheet" href="assets/css/pages.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="icon" href="assets/images/logo.png" type="image/png" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo">
+      <img src="assets/images/logo.png" alt="Smart Waste Management Logo" />
+      <h1>Smart Waste Management</h1>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+        <li><a href="login.html" class="active"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+        <li><a href="signup.html"><i class="fas fa-user-plus"></i> Signup</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="form-section">
+    <div class="form-container">
+      <h2><i class="fas fa-sign-in-alt"></i> Welcome Back</h2>
+      <p class="form-subtitle">Login to your account to continue</p>
+      <form id="loginForm">
+        <div class="input-group">
+          <i class="fas fa-envelope input-icon"></i>
+          <input type="email" id="email" placeholder="Email Address" required aria-label="Email" />
+        </div>
+        <div class="input-group">
+          <i class="fas fa-lock input-icon"></i>
+          <input type="password" id="password" placeholder="Password" required aria-label="Password" />
+        </div>
+        <button type="submit" class="btn primary-btn"><i class="fas fa-sign-in-alt"></i> Login</button>
+      </form>
+      <div id="msg" class="msg" style="display:none;"></div>
+      <p class="form-links">
+        <a href="#" id="forgotLink"><i class="fas fa-key"></i> Forgot Password?</a>
+      </p>
+      <p class="form-links">Don't have an account? <a href="signup.html"><i class="fas fa-user-plus"></i> Signup</a></p>
+    </div>
+  </section>
+
+  <!-- Forgot Password Modal -->
+  <div id="forgotModal" class="modal" style="display:none;">
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-key"></i> Reset Your Password</h3>
+        <button class="close-btn" id="closeModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- Step 1: Enter Email -->
+        <div id="step1" class="step active">
+          <p class="form-subtitle">Enter your registered email to receive an OTP</p>
+          <div class="input-group">
+            <i class="fas fa-envelope input-icon"></i>
+            <input type="email" id="forgotEmail" placeholder="Registered Email" required aria-label="Email for reset" />
+          </div>
+          <button id="sendResetOtp" class="btn primary-btn"><i class="fas fa-paper-plane"></i> Send OTP</button>
+        </div>
+        <!-- Step 2: Enter OTP and New Password -->
+        <div id="step2" class="step" style="display:none;">
+          <p class="form-subtitle">Enter the OTP and set a new password</p>
+          <div class="input-group">
+            <i class="fas fa-hashtag input-icon"></i>
+            <input type="text" id="resetOtp" placeholder="Enter OTP" required aria-label="OTP" />
+          </div>
+          <div class="input-group">
+            <i class="fas fa-lock input-icon"></i>
+            <input type="password" id="newPass" placeholder="New Password" required aria-label="New password" />
+          </div>
+          <div class="input-group">
+            <i class="fas fa-lock input-icon"></i>
+            <input type="password" id="newConfirm" placeholder="Confirm Password" required aria-label="Confirm password" />
+          </div>
+          <button id="resetBtn" class="btn primary-btn"><i class="fas fa-save"></i> Reset Password</button>
+        </div>
+        <div id="resetMsg" class="msg" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 Smart Waste Management | <a href="index.html">Home</a> | <a href="about.html">About</a></p>
+  </footer>
+
+  <script>
+    const msg = document.getElementById("msg");
+    const resetMsg = document.getElementById("resetMsg");
+    const modal = document.getElementById("forgotModal");
+    const step1 = document.getElementById("step1");
+    const step2 = document.getElementById("step2");
+
+    // Open Modal
+    document.getElementById("forgotLink").addEventListener("click", (e) => {
+      e.preventDefault();
+      modal.style.display = "block";
+      step1.style.display = "block";
+      step2.style.display = "none";
+      resetMsg.style.display = "none";
+      document.getElementById("forgotEmail").focus();
+    });
+
+    // Close Modal
+    document.getElementById("closeModal").addEventListener("click", closeModal);
+    document.getElementById("modalBackdrop").addEventListener("click", closeModal);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modal.style.display === "block") closeModal();
+    });
+
+    function closeModal() {
+      modal.style.display = "none";
+      resetMsg.style.display = "none";
+    }
+
+    // Login Form
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector("button");
+      btn.disabled = true;
+      btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Logging in...";
+      msg.style.display = "block";
+      msg.className = "msg info";
+      msg.innerHTML = "<i class='fas fa-info-circle'></i> Authenticating...";
+      const res = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: document.getElementById("email").value,
+          password: document.getElementById("password").value,
+        }),
+      });
+      const result = await res.json();
+      btn.disabled = false;
+      btn.innerHTML = "<i class='fas fa-sign-in-alt'></i> Login";
+      if (result.success) {
+        msg.className = "msg success";
+        msg.innerHTML = "<i class='fas fa-check-circle'></i> Login successful! Redirecting...";
+        localStorage.setItem("token", result.token);
+        localStorage.setItem("userEmail", document.getElementById("email").value);
+        setTimeout(() => {
+          if (result.role === "admin") window.location.href = "admin.html";
+          else window.location.href = "citizen.html";
+        }, 1000);
+      } else {
+        msg.className = "msg error";
+        msg.innerHTML = "<i class='fas fa-exclamation-triangle'></i> " + (result.message || "Invalid credentials.");
+      }
+    });
+
+    // Send OTP
+    document.getElementById("sendResetOtp").addEventListener("click", async () => {
+      const email = document.getElementById("forgotEmail").value;
+      if (!email) {
+        resetMsg.style.display = "block";
+        resetMsg.className = "msg error";
+        resetMsg.innerHTML = "<i class='fas fa-exclamation-triangle'></i> Please enter an email.";
+        return;
+      }
+      const btn = document.getElementById("sendResetOtp");
+      btn.disabled = true;
+      btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Sending...";
+      resetMsg.style.display = "block";
+      resetMsg.className = "msg info";
+      resetMsg.innerHTML = "<i class='fas fa-info-circle'></i> Sending OTP...";
+      const res = await fetch("http://localhost:5000/api/auth/forgot-password-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const result = await res.json();
+      btn.disabled = false;
+      btn.innerHTML = "<i class='fas fa-paper-plane'></i> Send OTP";
+      if (result.success) {
+        resetMsg.className = "msg success";
+        resetMsg.innerHTML = "<i class='fas fa-check-circle'></i> OTP sent! Check your mail.";
+        step1.style.display = "none";
+        step2.style.display = "block";
+        document.getElementById("resetOtp").focus();
+      } else {
+        resetMsg.className = "msg error";
+        resetMsg.innerHTML = "<i class='fas fa-exclamation-triangle'></i> " + result.message;
+      }
+    });
+
+    // Reset Password
+    document.getElementById("resetBtn").addEventListener("click", async () => {
+      const email = document.getElementById("forgotEmail").value;
+      const otp = document.getElementById("resetOtp").value;
+      const password = document.getElementById("newPass").value;
+      const confirm = document.getElementById("newConfirm").value;
+      if (password !== confirm) {
+        resetMsg.className = "msg error";
+        resetMsg.innerHTML = "<i class='fas fa-exclamation-triangle'></i> Passwords do not match!";
+        return;
+      }
+      const btn = document.getElementById("resetBtn");
+      btn.disabled = true;
+      btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Resetting...";
+      resetMsg.className = "msg info";
+      resetMsg.innerHTML = "<i class='fas fa-info-circle'></i> Resetting password...";
+      const res = await fetch("http://localhost:5000/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp, newPassword: password }),
+      });
+      const result = await res.json();
+      btn.disabled = false;
+      btn.innerHTML = "<i class='fas fa-save'></i> Reset Password";
+      if (result.success) {
+        resetMsg.className = "msg success";
+        resetMsg.innerHTML = "<i class='fas fa-check-circle'></i> Password reset successful! Redirecting to login...";
+        setTimeout(() => {
+          closeModal();
+          window.location.href = "login.html";
+        }, 1500);
+      } else {
+        resetMsg.className = "msg error";
+        resetMsg.innerHTML = "<i class='fas fa-exclamation-triangle'></i> " + result.message;
+      }
+    });
+  </script>
+
+  <style>
+    .form-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 120px);
+  background: var(--bg-light, #f8f9fa);
+  overflow: hidden;
+}
+
+.form-container {
+  width: 100%;
+  max-width: 400px;
+  background: white;
+  padding: 40px 30px;
+  border-radius: 16px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  animation: slideUp 0.7s ease forwards;
+  opacity: 0;
+  transform: translateY(50px);
+}
+
+/* Smooth fade-up animation */
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(60px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Input and button tweaks for nice spacing */
+.input-group {
+  position: relative;
+  margin-bottom: 15px;
+}
+.input-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--primary-color);
+  font-size: 1rem;
+}
+.form-container input {
+  padding-left: 40px;
+}
+.primary-btn {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* Links */
+.form-links {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 0.9rem;
+}
+.form-links a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+.form-links a:hover {
+  text-decoration: underline;
+}
+
+/* Message styles */
+.msg {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 500;
+}
+.msg.success {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+.msg.error {
+  background: #ffebee;
+  color: #c62828;
+}
+.msg.info {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+/* Modal Styles */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+}
+.modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+}
+.modal-content {
+  position: relative;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  max-width: 400px;
+  width: 90%;
+  animation: fadeIn 0.3s ease;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--dark-text);
+}
+.close-btn:hover {
+  color: var(--primary-color);
+}
+.step {
+  display: none;
+}
+.step.active {
+  display: block;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, -60%); }
+  to { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .form-container {
+    padding: 25px 20px;
+  }
+  .input-group {
+    margin-bottom: 12px;
+  }
+  .modal-content {
+    padding: 15px;
+  }
+}
+
+  </style>
+</body>
+</html>

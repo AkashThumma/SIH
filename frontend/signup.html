@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signup | Smart Waste Management</title>
+  <link rel="stylesheet" href="assets/css/pages.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="icon" href="assets/images/logo.png" type="image/png" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo">
+      <img src="assets/images/logo.png" alt="Smart Waste Management Logo" />
+      <h1>Smart Waste Management</h1>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+        <li><a href="login.html"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+        <li><a href="signup.html" class="active"><i class="fas fa-user-plus"></i> Signup</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="form-section">
+    <div class="form-container">
+      <h2><i class="fas fa-user-plus"></i> Create Your Account</h2>
+      <p class="form-subtitle">Join us to make a difference in waste management</p>
+      <form id="signupForm">
+        <div class="input-group">
+          <i class="fas fa-user input-icon"></i>
+          <input type="text" id="fullName" placeholder="Full Name" required aria-label="Full Name" />
+        </div>
+        <div class="input-group">
+          <i class="fas fa-envelope input-icon"></i>
+          <input type="email" id="email" placeholder="Email Address" required aria-label="Email" />
+        </div>
+        <div class="input-group">
+          <i class="fas fa-users input-icon"></i>
+          <select id="role" required aria-label="Role">
+            <option value="">Select Role</option>
+            <option value="citizen">Citizen</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <button type="submit" class="btn primary-btn"><i class="fas fa-paper-plane"></i> Send OTP</button>
+      </form>
+      <div id="msg" class="msg" style="display:none;"></div>
+      <p class="form-links">Already have an account? <a href="login.html"><i class="fas fa-sign-in-alt"></i> Login</a></p>
+    </div>
+  </section>
+
+  <footer>
+    <p>&copy; 2025 Smart Waste Management | <a href="index.html">Home</a> | <a href="about.html">About</a></p>
+  </footer>
+
+  <script>
+    const form = document.getElementById("signupForm");
+    const msg = document.getElementById("msg");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector("button");
+      btn.disabled = true;
+      btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Sending OTP...";
+      msg.style.display = "block";
+      msg.className = "msg info";
+      msg.innerHTML = "<i class='fas fa-info-circle'></i> Sending OTP...";
+      const data = {
+        fullName: document.getElementById("fullName").value,
+        email: document.getElementById("email").value,
+        role: document.getElementById("role").value,
+      };
+      const res = await fetch("http://localhost:5000/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      
+      const result = await res.json();
+      btn.disabled = false;
+      btn.innerHTML = "<i class='fas fa-paper-plane'></i> Send OTP";
+      if (result.success) {
+        msg.className = "msg success";
+        msg.innerHTML = "<i class='fas fa-check-circle'></i> OTP sent! Redirecting...";
+        localStorage.setItem("signupEmail", data.email);
+        localStorage.setItem("signupFullname", data.fullName);
+        localStorage.setItem("signupRole", data.role);
+        setTimeout(() => (window.location.href = "otp.html"), 1500);
+      } else {
+        msg.className = "msg error";
+        msg.innerHTML = "<i class='fas fa-exclamation-triangle'></i> " + (result.message || "Failed to send OTP.");
+      }
+    });
+  </script>
+
+  <style>
+    .form-subtitle {
+      text-align: center;
+      color: var(--dark-text);
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+    }
+    .input-group {
+      position: relative;
+      margin-bottom: 15px;
+    }
+    .input-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--primary-color);
+      font-size: 1rem;
+    }
+    .form-container input,
+    .form-container select {
+      padding-left: 40px;
+    }
+    .primary-btn {
+      width: 100%;
+      margin-top: 10px;
+    }
+    .form-links {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 0.9rem;
+    }
+    .form-links a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    .form-links a:hover {
+      text-decoration: underline;
+    }
+    .msg {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 500;
+    }
+    .msg.success {
+      background: #e8f5e8;
+      color: #2e7d32;
+    }
+    .msg.error {
+      background: #ffebee;
+      color: #c62828;
+    }
+    .msg.info {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+    @media (max-width: 768px) {
+      .form-container {
+        padding: 25px 20px;
+      }
+      .input-group {
+        margin-bottom: 12px;
+      }
+    }
+  </style>
+</body>
+</html>

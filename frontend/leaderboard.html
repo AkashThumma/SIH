@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Leaderboard | Smart Waste Management</title>
+  <link rel="stylesheet" href="assets/css/pages.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="icon" href="assets/images/logo.png" type="image/png" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo">
+      <img src="assets/images/logo.png" alt="Smart Waste Management Logo" />
+      <h1>Smart Waste Management</h1>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+        <li><a href="citizen.html"><i class="fas fa-user"></i> Citizen</a></li>
+        <li><a href="leaderboard.html" class="active"><i class="fas fa-trophy"></i> Leaderboard</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="leaderboard-section">
+      <h2><i class="fas fa-medal"></i> Citizen Leaderboard</h2>
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th><i class="fas fa-medal"></i> Rank</th>
+            <th><i class="fas fa-user"></i> Username</th>
+            <th><i class="fas fa-star"></i> Points</th>
+            <th><i class="fas fa-award"></i> Badge</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboardBody">
+          <tr><td colspan="4">Loading...</td></tr>
+        </tbody>
+      </table>
+      <a href="citizen.html" class="btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Smart Waste Management | <a href="index.html">Home</a> | <a href="about.html">About</a></p>
+  </footer>
+
+  <script>
+    const backend = "http://localhost:5000";
+    const token = localStorage.getItem("token");
+    if (!token) { alert("Login first"); window.location.href = "login.html"; }
+
+    async function loadLeaderboard() {
+      try {
+        const res = await fetch(`${backend}/api/citizen/leaderboard`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const json = await res.json();
+        const tbody = document.getElementById("leaderboardBody");
+        if (json.success) {
+          tbody.innerHTML = json.leaderboard.map((u, i) => `
+            <tr class="leaderboard-row">
+              <td><i class="${i === 0 ? 'fas fa-crown' : i === 1 ? 'fas fa-medal' : i === 2 ? 'fas fa-award' : 'fas fa-trophy'}"></i> ${i + 1}</td>
+              <td>${u.username || u.email.split('@')[0]}</td>
+              <td><i class="fas fa-coins"></i> ${u.points}</td>
+              <td><span class="badge ${u.badge ? 'badge-gold' : 'badge-none'}">${u.badge || 'None'}</span></td>
+            </tr>
+          `).join('');
+        } else {
+          tbody.innerHTML = `<tr><td colspan="4">Failed to load leaderboard</td></tr>`;
+        }
+      } catch (err) {
+        console.error(err);
+        document.getElementById("leaderboardBody").innerHTML = `<tr><td colspan="4">Error loading</td></tr>`;
+      }
+    }
+
+    loadLeaderboard();
+  </script>
+
+  <style>
+    .leaderboard-section {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: var(--light-text);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .leaderboard-table th, .leaderboard-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    .leaderboard-table th {
+      background: var(--primary-color);
+      color: white;
+      font-weight: 600;
+    }
+    .leaderboard-row:hover {
+      background: #f9f9f9;
+      transition: background 0.3s;
+    }
+    .badge {
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .badge-gold {
+      background: #ffca28;
+      color: #004d40;
+    }
+    .badge-none {
+      background: #ccc;
+      color: #333;
+    }
+  </style>
+</body>
+</html>

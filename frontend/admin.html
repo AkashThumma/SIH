@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Admin Dashboard | Smart Waste Management</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="assets/css/pages.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  <link rel="icon" href="assets/images/logo.png" type="image/png" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo">
+      <img src="assets/images/logo.png" alt="Smart Waste Management Logo" />
+      <h1>Admin Panel</h1>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="admin.html" class="active"><i class="fas fa-tachometer-alt"></i> Admin</a></li>
+        <li><a href="index.html"><i class="fas fa-home"></i> Home</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="dash">
+    <div class="card">
+      <h3><i class="fas fa-chart-bar"></i> Stats</h3>
+      <canvas id="statsChart" width="25" height="25"></canvas>
+      <div id="statsText" class="msg info">Loading stats...</div>
+    </div>
+
+    <div class="card">
+      <h3><i class="fas fa-list"></i> Reports</h3>
+      <div id="reportsContainer" class="loading"><div class="spinner"></div></div>
+    </div>
+
+    <div class="card">
+      <h3><i class="fas fa-trophy"></i> Leaderboard</h3>
+      <div id="leaderboardContainer" class="loading"><div class="spinner"></div></div>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Smart Waste Management | <a href="index.html">Home</a> | <a href="about.html">About</a></p>
+  </footer>
+
+  <script>
+    // Your original JS remains unchanged, with minor additions for leaderboard styling
+    const backend = "http://localhost:5000";
+    const token = localStorage.getItem("token");
+    if (!token) { alert("Login as admin first"); window.location.href = "login.html"; }
+
+    async function fetchStats() {
+      try {
+        const res = await fetch(`${backend}/api/admin/stats`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const json = await res.json();
+        console.log("Stats response:", json);
+        if (!json.success) {
+          console.error("Stats error:", json.message);
+          return;
+        }
+        const s = json.stats;
+        document.getElementById("statsText").innerText = `Total: ${s.total} • Completed: ${s.completed} • Pending: ${s.pending} • Reported: ${s.reported}`;
+        const ctx = document.getElementById("statsChart").getContext("2d");
+        if (window.statsChart && typeof window.statsChart.destroy === 'function') {
+          window.statsChart.destroy();
+        }
+        window.statsChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: ['Completed','Pending','Reported'],
+            datasets: [{ data: [s.completed, s.pending, s.reported] }]
+          }
+        });
+      } catch (error) {
+        console.error("Stats fetch error:", error);
+        document.getElementById("statsText").innerText = "Error loading stats.";
+      }
+    }
+
+    async function fetchReports() {
+      const container = document.getElementById("reportsContainer");
+      try {
+        const res = await fetch(`${backend}/api/admin/reports`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const json = await res.json();
+        console.log("Reports response:", json);
+        if (!json.success) {
+          container.innerHTML = `<p class="msg error">Error: ${json.message}</p>`;
+          return;
+        }
+        const reports = json.reports;
+        if (!reports || reports.length === 0) { container.innerHTML = "<p>No reports.</p>"; return; }
+        let html = `<table class="reports-table"><thead><tr><th>ID</th><th>Image</th><th>Uploader</th><th>Location</th><th>Status</th><th>Actions</th></tr></thead><tbody>`;
+        reports.forEach(r => {
+          html += `<tr>
+            <td>${r.id}</td>
+            <td>${r.image_url ? `<img src="${r.image_url}" class="img-thumb" alt="Waste report image"/>` : '-'}</td>
+            <td>${r.fullname} <div class="small">${r.email}</div></td>
+            <td>${r.latitude || '-'}, ${r.longitude || '-'}</td>
+            <td id="status-${r.id}">${r.status}</td>
+            <td>
+              <select id="select-${r.id}">
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+                <option value="reported">Reported</option>
+              </select>
+              <button class="btn-small" onclick="updateStatus(${r.id})"><i class="fas fa-edit"></i> Update</button>
+              <button class="btn-small danger" onclick="flagFalse(${r.id})"><i class="fas fa-flag"></i> Flag False</button>
+            </td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+      } catch (error) {
+        console.error("Reports fetch error:", error);
+        container.innerHTML = "<p class='msg error'>Error loading reports. Check console for details.</p>";
+      }
+    }
+
+    async function updateStatus(reportId) {
+      const sel = document.getElementById(`select-${reportId}`);
+      const status = sel.value;
+      try {
+        const res = await fetch(`${backend}/api/admin/reports/${reportId}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type":"application/json", Authorization:`Bearer ${token}` },
+          body: JSON.stringify({ status })
+        });
+        const json = await res.json();
+        if (json.success) {
+          document.getElementById(`status-${reportId}`).innerText = status;
+          alert("Status updated");
+          fetchStats();
+        } else alert("Error: " + (json.message || "Failed"));
+      } catch (error) {
+        console.error("Update status error:", error);
+        alert("Error updating status.");
+      }
+    }
+
+    async function flagFalse(reportId) {
+      if (!confirm("Flag as false and block uploader for 7 days?")) return;
+      try {
+        const res = await fetch(`${backend}/api/admin/reports/${reportId}/report-false`, {
+          method: "POST",
+          headers: { Authorization:`Bearer ${token}` }
+        });
+        const json = await res.json();
+        if (json.success) {
+          alert(json.message);
+          fetchReports();
+          fetchStats();
+        } else alert("Error: " + (json.message || "Failed"));
+      } catch (error) {
+        console.error("Flag false error:", error);
+        alert("Error flagging report.");
+      }
+    }
+
+    async function fetchLeaderboard() {
+      const container = document.getElementById("leaderboardContainer");
+      try {
+        const res = await fetch(`${backend}/api/admin/leaderboard`, {
+          headers: { Authorization:`Bearer ${token}` }
+        });
+        const json = await res.json();
+        console.log("Leaderboard response:", json);
+        if (!json.success) { 
+          container.innerHTML = `<p class="msg error">Failed to load leaderboard</p>`; 
+          return; 
+        }
+        let html = `<table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th><i class="fas fa-medal"></i> Rank</th>
+              <th><i class="fas fa-user"></i> User</th>
+              <th><i class="fas fa-star"></i> Points</th>
+              <th><i class="fas fa-award"></i> Badge</th>
+            </tr>
+          </thead>
+          <tbody>`;
+        json.leaderboard.forEach((u, i) => {
+          const rankIcon = i === 0 ? 'fas fa-crown' : i === 1 ? 'fas fa-medal' : i === 2 ? 'fas fa-award' : 'fas fa-trophy';
+          const badgeClass = u.badge ? 'badge-gold' : 'badge-none';
+          html += `<tr class="leaderboard-row">
+            <td><i class="${rankIcon}"></i> ${i + 1}</td>
+            <td>${u.username || u.email.split('@')[0]}</td>
+            <td><i class="fas fa-coins"></i> ${u.points}</td>
+            <td><span class="badge ${badgeClass}">${u.badge || 'None'}</span></td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+      } catch (error) {
+        console.error("Leaderboard fetch error:", error);
+        container.innerHTML = `<p class="msg error">Error loading leaderboard. Check console.</p>`;
+      }
+    }
+
+    (async function init() {
+      await fetchStats();
+      await fetchReports();
+      await fetchLeaderboard();
+    })();
+  </script>
+
+  <style>
+    /* Additional styles for professional leaderboard */
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .leaderboard-table th, .leaderboard-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    .leaderboard-table th {
+      background: var(--primary-color);
+      color: white;
+      font-weight: 600;
+    }
+    .leaderboard-row:hover {
+      background: #f9f9f9;
+      transition: background 0.3s;
+    }
+    .badge {
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .badge-gold {
+      background: #ffca28;
+      color: #004d40;
+    }
+    .badge-none {
+      background: #ccc;
+      color: #333;
+    }
+  </style>
+</body>
+</html>
